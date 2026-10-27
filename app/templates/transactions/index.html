@@ -1,0 +1,202 @@
+{% extends "base.html" %}
+
+{% block title %}Transactions — SmartSpend{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Transactions</h1>
+    <p class="page-subtitle">View, search, filter, and manage all your income and expenses.</p>
+  </div>
+  
+  <div class="page-actions">
+    <!-- Export CSV with current filters -->
+    <a href="{{ url_for('transactions.export_csv', type=filters.type, category=filters.category, start_date=filters.start_date, end_date=filters.end_date, search=filters.search) }}" 
+       class="btn btn-secondary" 
+       title="Export filtered records as a CSV file">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+        <polyline points="7 10 12 15 17 10"></polyline>
+        <line x1="12" y1="15" x2="12" y2="3"></line>
+      </svg>
+      Export CSV
+    </a>
+
+    <!-- Add Transaction -->
+    <a href="{{ url_for('transactions.add') }}" class="btn btn-primary">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <line x1="12" y1="5" x2="12" y2="19"></line>
+        <line x1="5" y1="12" x2="19" y2="12"></line>
+      </svg>
+      Add Transaction
+    </a>
+  </div>
+</div>
+
+<!-- Search & Filter Card -->
+<div class="filter-card">
+  <form method="GET" action="{{ url_for('transactions.index') }}">
+    <div class="filter-grid">
+      <!-- Search Input -->
+      <div>
+        <label for="search" class="form-label">Search Description</label>
+        <input 
+          type="text" 
+          id="search" 
+          name="search" 
+          class="form-control" 
+          placeholder="e.g. coffee, rent, salary"
+          value="{{ filters.search }}"
+        >
+      </div>
+
+      <!-- Type Filter -->
+      <div>
+        <label for="type" class="form-label">Type</label>
+        <select id="type" name="type" class="form-select">
+          <option value="all" {% if filters.type == 'all' or not filters.type %}selected{% endif %}>All Types</option>
+          <option value="expense" {% if filters.type == 'expense' %}selected{% endif %}>Expenses Only</option>
+          <option value="income" {% if filters.type == 'income' %}selected{% endif %}>Income Only</option>
+        </select>
+      </div>
+
+      <!-- Category Filter -->
+      <div>
+        <label for="category" class="form-label">Category</label>
+        <select id="category" name="category" class="form-select">
+          <option value="">All Categories</option>
+          {% for cat in categories %}
+          <option value="{{ cat.name }}" {% if filters.category == cat.name %}selected{% endif %}>
+            {{ cat.name }} ({{ cat.type }})
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- Start Date -->
+      <div>
+        <label for="start_date" class="form-label">From Date</label>
+        <input type="date" id="start_date" name="start_date" class="form-control" value="{{ filters.start_date }}">
+      </div>
+
+      <!-- End Date -->
+      <div>
+        <label for="end_date" class="form-label">To Date</label>
+        <input type="date" id="end_date" name="end_date" class="form-control" value="{{ filters.end_date }}">
+      </div>
+
+      <!-- Buttons -->
+      <div style="display: flex; gap: 0.5rem;">
+        <button type="submit" class="btn btn-dark" style="flex: 1;">Filter</button>
+        <a href="{{ url_for('transactions.index') }}" class="btn btn-secondary" title="Reset filters">Reset</a>
+      </div>
+    </div>
+  </form>
+</div>
+
+<!-- Filter Summary KPIs -->
+<div style="display: flex; gap: 1.5rem; flex-wrap: wrap; margin-bottom: 1.5rem; padding: 0.85rem 1.25rem; background: white; border: 1px solid var(--border-color); border-radius: var(--radius-md); font-size: 0.9rem;">
+  <div>
+    <span style="color: var(--text-muted);">Transactions Found:</span>
+    <strong style="color: var(--text-main); margin-left: 0.35rem;">{{ stats.count }}</strong>
+  </div>
+  <div>
+    <span style="color: var(--text-muted);">Filtered Income:</span>
+    <strong style="color: var(--color-income); margin-left: 0.35rem;">+{{ stats.income | currency }}</strong>
+  </div>
+  <div>
+    <span style="color: var(--text-muted);">Filtered Expenses:</span>
+    <strong style="color: var(--color-expense); margin-left: 0.35rem;">-{{ stats.expense | currency }}</strong>
+  </div>
+  <div>
+    <span style="color: var(--text-muted);">Net Filtered:</span>
+    <strong style="color: {% if stats.net >= 0 %}var(--color-income){% else %}var(--color-expense){% endif %}; margin-left: 0.35rem;">
+      {{ stats.net | currency }}
+    </strong>
+  </div>
+</div>
+
+<!-- Transactions Table Card -->
+<div class="card" style="padding: 0;">
+  {% if transactions %}
+  <div class="table-responsive">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Type</th>
+          <th>Category</th>
+          <th>Description</th>
+          <th style="text-align: right;">Amount</th>
+          <th style="text-align: right; width: 140px;">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for t in transactions %}
+        <tr>
+          <td style="color: var(--text-muted); font-size: 0.875rem; white-space: nowrap;">
+            {{ t.date | format_date }}
+          </td>
+          <td>
+            {% if t.type == 'income' %}
+              <span class="badge badge-income">Income</span>
+            {% else %}
+              <span class="badge badge-expense">Expense</span>
+            {% endif %}
+          </td>
+          <td>
+            <span class="badge badge-category">{{ t.category }}</span>
+          </td>
+          <td style="max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+            {{ t.description or '—' }}
+          </td>
+          <td style="text-align: right; font-weight: 700; font-size: 0.95rem; white-space: nowrap;">
+            {% if t.type == 'income' %}
+              <span style="color: var(--color-income);">+{{ t.amount | currency }}</span>
+            {% else %}
+              <span style="color: var(--color-expense);">-{{ t.amount | currency }}</span>
+            {% endif %}
+          </td>
+          <td style="text-align: right; white-space: nowrap;">
+            <div style="display: inline-flex; gap: 0.4rem;">
+              <!-- Edit Button -->
+              <a href="{{ url_for('transactions.edit', transaction_id=t.id) }}" class="btn btn-sm btn-secondary" title="Edit transaction">
+                Edit
+              </a>
+              <!-- Delete Form -->
+              <form action="{{ url_for('transactions.delete', transaction_id=t.id) }}" method="POST" onsubmit="return confirm('Are you sure you want to delete this transaction?');" style="margin: 0;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-sm btn-danger" title="Delete transaction">
+                  Delete
+                </button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="empty-state">
+    <div class="empty-state-icon">🔍</div>
+    <div class="empty-state-title">No Transactions Found</div>
+    <p class="empty-state-text">
+      {% if filters.search or filters.category or filters.start_date or filters.end_date or filters.type != 'all' %}
+        No transactions match your current filters. Try resetting the filters.
+      {% else %}
+        You have not added any transactions yet.
+      {% endif %}
+    </p>
+    <div>
+      {% if filters.search or filters.category or filters.start_date or filters.end_date or filters.type != 'all' %}
+        <a href="{{ url_for('transactions.index') }}" class="btn btn-secondary">Clear Filters</a>
+      {% else %}
+        <a href="{{ url_for('transactions.add') }}" class="btn btn-primary">Add Your First Transaction</a>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
+

@@ -1,0 +1,196 @@
+{% extends "base.html" %}
+
+{% block title %}Reports & Analytics — SmartSpend{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Financial Reports & Analytics</h1>
+    <p class="page-subtitle">In-depth insights, spending trends, and breakdown across the last {{ num_months }} months.</p>
+  </div>
+  
+  <div class="page-actions">
+    <!-- Period Selector -->
+    <div style="display: flex; gap: 0.5rem; background: white; border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 0.25rem;">
+      <a href="{{ url_for('reports.index', months=3) }}" class="btn btn-sm {% if num_months == 3 %}btn-dark{% else %}btn-secondary{% endif %}" style="border:none;">3 Months</a>
+      <a href="{{ url_for('reports.index', months=6) }}" class="btn btn-sm {% if num_months == 6 %}btn-dark{% else %}btn-secondary{% endif %}" style="border:none;">6 Months</a>
+      <a href="{{ url_for('reports.index', months=12) }}" class="btn btn-sm {% if num_months == 12 %}btn-dark{% else %}btn-secondary{% endif %}" style="border:none;">12 Months</a>
+    </div>
+
+    <!-- Export Button -->
+    <a href="{{ url_for('transactions.export_csv') }}" class="btn btn-secondary">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+        <polyline points="7 10 12 15 17 10"></polyline>
+        <line x1="12" y1="15" x2="12" y2="3"></line>
+      </svg>
+      Export CSV
+    </a>
+  </div>
+</div>
+
+<!-- Key Performance Indicators (KPIs) -->
+<div class="metrics-grid">
+  <!-- Total Income in Period -->
+  <div class="metric-card">
+    <div class="metric-header">
+      <span class="metric-label">Period Income</span>
+      <div class="metric-icon-box metric-icon-income">📈</div>
+    </div>
+    <div class="metric-value income">{{ total_income | currency }}</div>
+    <div class="metric-subtext">Over the last {{ num_months }} months</div>
+  </div>
+
+  <!-- Total Expense in Period -->
+  <div class="metric-card danger">
+    <div class="metric-header">
+      <span class="metric-label">Period Expenses</span>
+      <div class="metric-icon-box metric-icon-expense">📉</div>
+    </div>
+    <div class="metric-value expense">{{ total_expense | currency }}</div>
+    <div class="metric-subtext">Avg: {{ avg_monthly_expense | currency }}/month</div>
+  </div>
+
+  <!-- Net Savings in Period -->
+  <div class="metric-card {% if net_savings < 0 %}danger{% endif %}">
+    <div class="metric-header">
+      <span class="metric-label">Net Savings</span>
+      <div class="metric-icon-box metric-icon-balance">💰</div>
+    </div>
+    <div class="metric-value" style="color: {% if net_savings >= 0 %}var(--color-income){% else %}var(--color-expense){% endif %};">
+      {{ net_savings | currency }}
+    </div>
+    <div class="metric-subtext">Income minus expenses</div>
+  </div>
+
+  <!-- Savings Rate & Top Category -->
+  <div class="metric-card info">
+    <div class="metric-header">
+      <span class="metric-label">Savings Rate</span>
+      <div class="metric-icon-box metric-icon-savings">🎯</div>
+    </div>
+    <div class="metric-value" style="color: #2563eb;">{{ savings_rate }}%</div>
+    <div class="metric-subtext">Top Expense: <strong>{{ top_category }}</strong></div>
+  </div>
+</div>
+
+<!-- Charts Grid -->
+<div class="charts-grid">
+  <!-- Cashflow Bar Chart -->
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <h2 class="card-title">Cashflow Comparison</h2>
+        <div class="card-subtitle">Monthly income vs. expense over {{ num_months }} months</div>
+      </div>
+    </div>
+    <div class="chart-wrapper">
+      <canvas id="reportTrendChart"></canvas>
+    </div>
+  </div>
+
+  <!-- Category Breakdown Doughnut -->
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <h2 class="card-title">Expense Distribution</h2>
+        <div class="card-subtitle">Spending share by category</div>
+      </div>
+    </div>
+    <div class="chart-wrapper">
+      <canvas id="reportCategoryChart"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- Savings Trend Line Chart -->
+<div class="card" style="margin-bottom: 2rem;">
+  <div class="card-header">
+    <div>
+      <h2 class="card-title">Monthly Net Savings Trend</h2>
+      <div class="card-subtitle">How much you saved or overspent month-by-month</div>
+    </div>
+  </div>
+  <div class="chart-wrapper" style="height: 250px;">
+    <canvas id="reportSavingsChart"></canvas>
+  </div>
+</div>
+
+<!-- Category Breakdown Table -->
+<div class="card" style="padding: 0;">
+  <div style="padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--border-color);">
+    <h2 class="card-title">Expense Category Breakdown</h2>
+    <div class="card-subtitle">Detailed allocation of expenses for the selected {{ num_months }}-month period</div>
+  </div>
+
+  {% if expense_categories %}
+  <div class="table-responsive">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Category</th>
+          <th style="width: 35%;">Share of Total Spending</th>
+          <th style="text-align: right;">Transactions</th>
+          <th style="text-align: right;">Total Amount</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for c in expense_categories %}
+        <tr>
+          <td style="font-weight: 600;">
+            <span class="badge badge-category">{{ c.category }}</span>
+          </td>
+          <td>
+            <div style="display: flex; align-items: center; gap: 0.75rem;">
+              <div class="progress-container" style="margin: 0; flex: 1;">
+                <div class="progress-bar progress-success" style="width: {{ c.percentage }}%;"></div>
+              </div>
+              <span style="font-size: 0.825rem; font-weight: 600; color: var(--text-muted); min-width: 45px;">
+                {{ c.percentage }}%
+              </span>
+            </div>
+          </td>
+          <td style="text-align: right; color: var(--text-muted);">
+            {{ c.count }}
+          </td>
+          <td style="text-align: right; font-weight: 700; color: var(--color-expense);">
+            {{ c.total_amount | currency }}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="empty-state">
+    <div class="empty-state-icon">📊</div>
+    <div class="empty-state-title">No Expense Data in Period</div>
+    <p class="empty-state-text">You haven't logged any expenses in the last {{ num_months }} months.</p>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const userCurrency = {{ current_user.currency | tojson }};
+
+    // Category Doughnut Chart
+    const catLabels = {{ chart_category_labels_json | safe }};
+    const catData = {{ chart_category_data_json | safe }};
+    initCategoryDoughnut('reportCategoryChart', catLabels, catData, userCurrency);
+
+    // Monthly Trend Bar Chart
+    const trendLabels = {{ chart_trend_labels_json | safe }};
+    const trendIncome = {{ chart_trend_income_json | safe }};
+    const trendExpense = {{ chart_trend_expense_json | safe }};
+    initMonthlyTrendBar('reportTrendChart', trendLabels, trendIncome, trendExpense, userCurrency);
+
+    // Monthly Savings Line Chart
+    const savingsData = {{ chart_savings_data_json | safe }};
+    initSavingsLineChart('reportSavingsChart', trendLabels, savingsData, userCurrency);
+  });
+</script>
+{% endblock %}
+

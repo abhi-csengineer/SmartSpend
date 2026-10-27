@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+
+{% block title %}Sign In — SmartSpend{% endblock %}
+
+{% block content %}
+<div class="auth-wrapper">
+  <div class="auth-card">
+    <div class="auth-header">
+      <div class="auth-logo">₹</div>
+      <h1 style="font-size: 1.5rem; font-weight: 800; color: var(--brand-navy); margin-bottom: 0.35rem;">Welcome to SmartSpend</h1>
+      <p style="color: var(--text-muted); font-size: 0.9rem;">Sign in to track expenses and control your budget.</p>
+    </div>
+
+    <form method="POST" action="{{ url_for('auth.login', next=next) }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+      <div class="form-group">
+        <label for="login_input" class="form-label">Username or Email</label>
+        <input 
+          type="text" 
+          id="login_input" 
+          name="login_input" 
+          class="form-control" 
+          placeholder="e.g. rahul_sharma or user@example.com"
+          value="{{ login_input or '' }}" 
+          required 
+          autofocus
+        >
+      </div>
+
+      <div class="form-group">
+        <label for="password" class="form-label">Password</label>
+        <input 
+          type="password" 
+          id="password" 
+          name="password" 
+          class="form-control" 
+          placeholder="••••••••" 
+          required
+        >
+      </div>
+
+      <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 0.5rem; padding: 0.75rem;">
+        Sign In
+      </button>
+    </form>
+
+    <div style="text-align: center; margin-top: 1.5rem; padding-top: 1.25rem; border-top: 1px solid var(--border-color); font-size: 0.875rem; color: var(--text-muted);">
+      Don't have an account? 
+      <a href="{{ url_for('auth.register') }}" style="font-weight: 600;">Create one now</a>
+    </div>
+  </div>
+</div>
+{% endblock %}
+

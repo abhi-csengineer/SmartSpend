@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+
+{% block title %}Create Account — SmartSpend{% endblock %}
+
+{% block content %}
+<div class="auth-wrapper">
+  <div class="auth-card" style="max-width: 480px;">
+    <div class="auth-header">
+      <div class="auth-logo">₹</div>
+      <h1 style="font-size: 1.5rem; font-weight: 800; color: var(--brand-navy); margin-bottom: 0.35rem;">Create Account</h1>
+      <p style="color: var(--text-muted); font-size: 0.9rem;">Join SmartSpend to master your personal finances.</p>
+    </div>
+
+    <form method="POST" action="{{ url_for('auth.register') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+      <div class="form-group">
+        <label for="full_name" class="form-label">Full Name</label>
+        <input 
+          type="text" 
+          id="full_name" 
+          name="full_name" 
+          class="form-control" 
+          placeholder="e.g. Rahul Sharma" 
+          value="{{ full_name or '' }}" 
+          required 
+          autofocus
+        >
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+        <div class="form-group">
+          <label for="username" class="form-label">Username</label>
+          <input 
+            type="text" 
+            id="username" 
+            name="username" 
+            class="form-control" 
+            placeholder="e.g. rahul24" 
+            value="{{ username or '' }}" 
+            required
+          >
+          <div class="form-hint">3–30 characters</div>
+        </div>
+
+        <div class="form-group">
+          <label for="currency" class="form-label">Currency Symbol</label>
+          <select id="currency" name="currency" class="form-select">
+            <option value="₹" {% if currency == '₹' or not currency %}selected{% endif %}>₹ (INR - Indian Rupee)</option>
+            <option value="$" {% if currency == '$' %}selected{% endif %}>$ (USD - US Dollar)</option>
+            <option value="€" {% if currency == '€' %}selected{% endif %}>€ (EUR - Euro)</option>
+            <option value="£" {% if currency == '£' %}selected{% endif %}>£ (GBP - British Pound)</option>
+            <option value="¥" {% if currency == '¥' %}selected{% endif %}>¥ (JPY / CNY)</option>
+            <option value="C$" {% if currency == 'C$' %}selected{% endif %}>C$ (CAD - Canadian Dollar)</option>
+            <option value="A$" {% if currency == 'A$' %}selected{% endif %}>A$ (AUD - Australian Dollar)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="email" class="form-label">Email Address</label>
+        <input 
+          type="email" 
+          id="email" 
+          name="email" 
+          class="form-control" 
+          placeholder="rahul@example.com" 
+          value="{{ email or '' }}" 
+          required
+        >
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+        <div class="form-group">
+          <label for="password" class="form-label">Password</label>
+          <input 
+            type="password" 
+            id="password" 
+            name="password" 
+            class="form-control" 
+            placeholder="••••••••" 
+            minlength="6"
+            required
+          >
+          <div class="form-hint">At least 6 characters</div>
+        </div>
+
+        <div class="form-group">
+          <label for="confirm_password" class="form-label">Confirm Password</label>
+          <input 
+            type="password" 
+            id="confirm_password" 
+            name="confirm_password" 
+            class="form-control" 
+            placeholder="••••••••" 
+            minlength="6"
+            required
+          >
+        </div>
+      </div>
+
+      <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 0.75rem; padding: 0.75rem;">
+        Create Account
+      </button>
+    </form>
+
+    <div style="text-align: center; margin-top: 1.5rem; padding-top: 1.25rem; border-top: 1px solid var(--border-color); font-size: 0.875rem; color: var(--text-muted);">
+      Already have an account? 
+      <a href="{{ url_for('auth.login') }}" style="font-weight: 600;">Sign in here</a>
+    </div>
+  </div>
+</div>
+{% endblock %}
+

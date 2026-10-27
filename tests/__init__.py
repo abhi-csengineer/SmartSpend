@@ -1,0 +1,2 @@
+# SmartSpend test suite package
+
